@@ -29461,8 +29461,8 @@ var require_sgdb = __commonJS({
           this.addddb(this.dblist[i].split(".")[0]);
         }
       }
-      addddb(name) {
-        this.db[name] = new db(`${this.dir}/${name}`);
+      addddb(name, n) {
+        this.db[name] = new db(`${this.dir}/${name}`, n);
       }
       removedb(name) {
         delete this.db;
@@ -29665,7 +29665,7 @@ var require_aes256 = __commonJS({
       exports3.ppFinder = ppFinder;
       return exports3;
     })().ppFinder("node_modules\\aes256\\index.js");
-    var crypto = require("crypto");
+    var crypto2 = require("crypto");
     var CIPHER_ALGORITHM = "aes-256-ctr";
     var aes256 = {
       /**
@@ -29685,10 +29685,10 @@ var require_aes256 = __commonJS({
         if (!(isString || isBuffer) || isString && !input || isBuffer && !\u00F8.prop(Buffer, "byteLength", [41, 81]).byteLength(input)) {
           throw new TypeError('Provided "input" must be a non-empty string or buffer');
         }
-        var sha256 = \u00F8.prop(crypto, "createHash", [45, 25]).createHash("sha256");
+        var sha256 = \u00F8.prop(crypto2, "createHash", [45, 25]).createHash("sha256");
         \u00F8.prop(sha256, "update", [46, 12]).update(key);
-        var iv = \u00F8.prop(crypto, "randomBytes", [49, 21]).randomBytes(16);
-        var cipher = \u00F8.prop(crypto, "createCipheriv", [50, 25]).createCipheriv(CIPHER_ALGORITHM, \u00F8.prop(sha256, "digest", [50, 65]).digest(), iv);
+        var iv = \u00F8.prop(crypto2, "randomBytes", [49, 21]).randomBytes(16);
+        var cipher = \u00F8.prop(crypto2, "createCipheriv", [50, 25]).createCipheriv(CIPHER_ALGORITHM, \u00F8.prop(sha256, "digest", [50, 65]).digest(), iv);
         var buffer = input;
         if (isString) {
           buffer = \u00F8.prop(Buffer, "from", [54, 23]).from(input);
@@ -29717,7 +29717,7 @@ var require_aes256 = __commonJS({
         if (!(isString || isBuffer) || isString && !encrypted || isBuffer && !\u00F8.prop(Buffer, "byteLength", [82, 85]).byteLength(encrypted)) {
           throw new TypeError('Provided "encrypted" must be a non-empty string or buffer');
         }
-        var sha256 = \u00F8.prop(crypto, "createHash", [86, 25]).createHash("sha256");
+        var sha256 = \u00F8.prop(crypto2, "createHash", [86, 25]).createHash("sha256");
         \u00F8.prop(sha256, "update", [87, 12]).update(key);
         var input = encrypted;
         if (isString) {
@@ -29731,7 +29731,7 @@ var require_aes256 = __commonJS({
           }
         }
         var iv = \u00F8.prop(input, "slice", [103, 20]).slice(0, 16);
-        var decipher = \u00F8.prop(crypto, "createDecipheriv", [104, 27]).createDecipheriv(CIPHER_ALGORITHM, \u00F8.prop(sha256, "digest", [104, 69]).digest(), iv);
+        var decipher = \u00F8.prop(crypto2, "createDecipheriv", [104, 27]).createDecipheriv(CIPHER_ALGORITHM, \u00F8.prop(sha256, "digest", [104, 69]).digest(), iv);
         var ciphertext = \u00F8.prop(input, "slice", [106, 28]).slice(16);
         var output;
         if (isString) {
@@ -29768,15 +29768,12 @@ var require_aes = __commonJS({
     var AES = require_aes256();
     var FileSystem = fs2;
     var aes256 = require_aes256();
-    var crypto = require("crypto");
-    function chiffreAES256(texte2) {
-      const cleHash = crypto.createHash("sha256").update(texte2).digest("hex").slice(0, 32);
-      const texteChiffre2 = aes256.encrypt(cleHash, texte2).slice(0, 32);
-      return texteChiffre2;
+    var crypto2 = require("crypto");
+    function chiffreAES256(texte) {
+      const cleHash = crypto2.createHash("sha256").update(texte).digest("hex").slice(0, 32);
+      const texteChiffre = aes256.encrypt(cleHash, texte).slice(0, 32);
+      return texteChiffre;
     }
-    var texte = "Bonjour, monde !";
-    var texteChiffre = chiffreAES256(texte);
-    console.log("Texte chiffr\xE9:", texteChiffre);
     var cipher = class {
       constructor(key) {
         this.key = key;
@@ -29922,9 +29919,14 @@ var cheerio = require_lib10();
 var fs = require("fs");
 var sgdb = require_sgdb();
 var aes = require_test();
+var crypto = require("crypto");
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 function createDisplayFunction() {
   let isFirstCall = true;
   return function(newString) {
+    fs.appendFileSync("log.txt", newString + "\n");
     if (!isFirstCall) {
       process.stdout.write("\x1B[1A");
       process.stdout.write("\x1B[2K");
@@ -29979,8 +29981,8 @@ var display = createDisplayFunction();
 display("Hello, world!");
 var dbManager = new sgdb("db");
 var hash = new aes.hash("1234567890123456");
-dbManager.addddb("indexedPages");
-dbManager.addddb("links");
+dbManager.addddb("indexedPages", 10);
+dbManager.addddb("links", 10);
 var indexedPagesDB = dbManager.accessdb("indexedPages");
 var linksDB = dbManager.accessdb("links");
 var pagesDir = "pages";
@@ -29996,12 +29998,12 @@ function generateFileName(url) {
 function extractLinksWithCheerio($, baseUrl) {
   const links = [];
   $("[href]").each(function() {
-    let link = $(this).attr("href");
-    if (link.startsWith("/")) {
-      link = new URL(link, baseUrl).href;
+    let link2 = $(this).attr("href");
+    if (link2.startsWith("/")) {
+      link2 = new URL(link2, baseUrl).href;
     }
-    if (!links.includes(link)) {
-      links.push(link);
+    if (!links.includes(link2)) {
+      links.push(link2);
     }
   });
   return links;
@@ -30024,17 +30026,25 @@ async function indexPage(url) {
     });
     $("img").each(function() {
       if ($(this).attr("src")) {
-        fs.appendFileSync("./images.txt", $(this).attr("src") + "\n");
+        link = $(this).attr("src");
+        if (link.startsWith("/")) {
+          link = new URL(link, url).href;
+        }
+        fs.appendFileSync("./images.txt", link + "\n");
       }
     });
     $("video").each(function() {
       if ($(this).attr("src")) {
-        fs.appendFileSync("./videos.txt", $(this).attr("src") + "\n");
+        link = $(this).attr("src");
+        if (link.startsWith("/")) {
+          link = new URL(link, url).href;
+        }
+        fs.appendFileSync("./videos.txt", link + "\n");
       }
     });
     const fileName = generateFileName(url);
     if (content.trim()) {
-      fs.writeFileSync(fileName, content.trim());
+     // fs.writeFileSync(fileName, content.trim());
     }
     const indexedPage = {
       url,
@@ -30046,11 +30056,11 @@ async function indexPage(url) {
     indexedPagesDB.set(url, indexedPage);
     const links = extractLinksWithCheerio($, url);
     links.forEach((linkUrl) => {
-      const link = {
+      const link2 = {
         sourceUrl: url,
         targetUrl: linkUrl
       };
-      linksDB.set(`${url}->${linkUrl}`, link);
+      linksDB.set(`${url}->${linkUrl}`, link2);
     });
   } catch (error) {
     display(`Erreur lors de l'indexation de la page ${url}: ${error}`);
@@ -30060,9 +30070,10 @@ async function indexLinks() {
   console.log(linksDB);
   try {
     const links = Object.values(linksDB.getAll());
-    for (const link of links) {
-      await indexPage(link.targetUrl);
-      console.log(`Liens restants \xE0 indexer: ${links.length - links.indexOf(link) - 1}`);
+    for (const link2 of links) {
+      await indexPage(link2.targetUrl);
+      await sleep(crypto.randomInt(5e4 / 2, 1e5 / 2));
+      console.log(`Liens restants \xE0 indexer: ${links.length - links.indexOf(link2) - 1}`);
     }
     console.log("Tous les liens ont \xE9t\xE9 index\xE9s avec succ\xE8s.");
   } catch (error) {
@@ -30075,11 +30086,12 @@ async function indexPages(urls) {
   chrono.start();
   for (const url of urls) {
     await indexPage(url);
+    await sleep(crypto.randomInt(5e4 / 2, 1e5 / 2));
     display(`page restante a indexer: ${linksDB.count() - urls.indexOf(url) - 1} temps de traitement : ${chrono.getTimeFormatted()}`);
   }
 }
 urlgen().then((data) => {
-  indexPages(data).then(() => {
+  indexPages(data.split("\n")).then(() => {
     indexLinks();
   });
 });

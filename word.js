@@ -21,7 +21,7 @@ const languageConfigDir = 'config';
 
 // Fonction pour lire le contenu d'un fichier
 function readFileContent(filePath) {
-    return fs.readFileSync(filePath, ).toString();
+    return fs.readFileSync(filePath).toString();
 }
 
 // Fonction pour normaliser les mots (mettre en minuscule et retirer la ponctuation)
@@ -50,7 +50,7 @@ function detectLanguage(fileName) {
     } else if (fileName.endsWith('_en.txt')) {
         return 'english';
     } else {
-        return 'english'
+        return 'english';
     }
 }
 
@@ -65,7 +65,7 @@ function indexWordsInFile(filePath, language) {
     const wordCounts = {};
 
     words.forEach(word => {
-        if (!filter.isProfane(word) && !stopWords.has(word)) {
+        if (!filter.isProfane(word) && !stopWords.has(word) && isNaN(word)) {
             if (word in wordCounts) {
                 wordCounts[word]++;
             } else {
@@ -76,9 +76,21 @@ function indexWordsInFile(filePath, language) {
 
     for (const [word, count] of Object.entries(wordCounts)) {
         if (indexedWordsDB.has(word)) {
-            indexedWordsDB.set(word, indexedWordsDB.get(word) + count);
+            const existingEntry = indexedWordsDB.get(word);
+            existingEntry.totalCount += count;
+            if (existingEntry.files[filePath]) {
+                existingEntry.files[filePath] += count;
+            } else {
+                existingEntry.files[filePath] = count;
+            }
+            indexedWordsDB.set(word, existingEntry);
         } else {
-            indexedWordsDB.set(word, count);
+            indexedWordsDB.set(word, {
+                totalCount: count,
+                files: {
+                    [filePath]: count
+                }
+            });
         }
     }
 

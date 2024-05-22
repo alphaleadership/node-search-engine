@@ -72,6 +72,36 @@ class Chrono {
 
 // Exemple d'utilisation
 const chrono = new Chrono();
+// Fonction pour convertir une durée en format humain en timestamp
+function humanDurationToTimestamp(duration) {
+  const durationPattern = /(\d+d)?\s*(\d+h)?\s*(\d+m)?\s*(\d+s)?/;
+  const matches = duration.match(durationPattern);
+
+  let totalMilliseconds = 0;
+
+  if (matches) {
+      const days = matches[1] ? parseInt(matches[1]) : 0;
+      const hours = matches[2] ? parseInt(matches[2]) : 0;
+      const minutes = matches[3] ? parseInt(matches[3]) : 0;
+      const seconds = matches[4] ? parseInt(matches[4]) : 0;
+
+      totalMilliseconds += days * 24 * 60 * 60 * 1000; // Conversion des jours en millisecondes
+      totalMilliseconds += hours * 60 * 60 * 1000; // Conversion des heures en millisecondes
+      totalMilliseconds += minutes * 60 * 1000; // Conversion des minutes en millisecondes
+      totalMilliseconds += seconds * 1000; // Conversion des secondes en millisecondes
+  }
+
+  return totalMilliseconds;
+}
+
+// Exemple d'utilisation
+const duration1 = "2d 3h 45m 30s";
+const duration2 = "5h 20m";
+const duration3 = "30m";
+
+console.log(humanDurationToTimestamp(duration1)); // 183930000 (2 jours, 3 heures, 45 minutes et 30 secondes en millisecondes)
+console.log(humanDurationToTimestamp(duration2)); // 19200000 (5 heures et 20 minutes en millisecondes)
+console.log(humanDurationToTimestamp(duration3)); // 1800000 (30 minutes en millisecondes)
 
 
 
@@ -132,17 +162,20 @@ function extractLinksWithCheerio($, baseUrl) {
 
 // Fonction pour indexer une page
 async function indexPage(url) {
+  display(url)
     try {
         // Vérifier si la page a été indexée récemment
         if (indexedPagesDB.has(url)) {
             const page = indexedPagesDB.get(url);
             const lastIndexedAt = new Date(page.lastIndexedAt);
-            if ((Date.now() - lastIndexedAt.getTime()) < 604800000) { // Une semaine en millisecondes
-               // console.log(`La page ${url} a été indexée récemment. Pas besoin de réindexer.`);
-                return;
+            if ((Date.now() - lastIndexedAt.getTime()) < humanDurationToTimestamp("30m")) { // Une semaine en millisecondes
+                display(`La page ${url} a été indexée récemment. Pas besoin de réindexer.`);
+                return 0;
             }
         }
-
+        if(url.startsWith("https://www.google.com/url?q=")){
+          url=url.replace("https://www.google.com/url?q=","")
+        }
         const response = await axios.get(url);
         const $ = cheerio.load(response.data);
         const title = $('title').text();
@@ -185,38 +218,41 @@ async function indexPage(url) {
             lastIndexedAt: getCurrentDate() // Mettre à jour la date d'indexation
         };
         indexedPagesDB.set(url, indexedPage);
-       // console.log(`Page ${url} indexée avec succès.`);
+       // display(`Page ${url} indexée avec succès.`);
 
         // Recherche des liens dans la page avec Cheerio
-        const links = extractLinksWithCheerio($, url);
+      //  const links = extractLinksWithCheerio($, url);
 
-        links.forEach(linkUrl => {
+      /*  links.forEach(linkUrl => {
             // Enregistrement des liens dans la base de données
             const link = {
                 sourceUrl: url,
                 targetUrl: linkUrl
             };
             linksDB.set(`${url}->${linkUrl}`, link);
-        });
+        });*/
 
     } catch (error) {
        display(`Erreur lors de l'indexation de la page ${url}: ${error}`);
+    } finally{
+      return 1
     }
 }
 
 // Fonction pour indexer les pages correspondant aux liens
 async function indexLinks() {
-    console.log(linksDB)
+    display(linksDB)
     try {
         const links = Object.values(linksDB.getAll());
         for (const link of links) {
-            await indexPage(link.targetUrl);
-            await sleep(crypto.randomInt(50000/2,100000/2))
-            console.log(`Liens restants à indexer: ${links.length - links.indexOf(link) - 1}`);
+            let t =await indexPage(link.targetUrl);
+            display(t)
+            await sleep(500*t)
+            display(`Liens restants à indexer: ${links.length - links.indexOf(link) - 1}`);
         }
-        console.log('Tous les liens ont été indexés avec succès.');
+        display('Tous les liens ont été indexés avec succès.');
     } catch (error) {
-        console.error(`Erreur lors de l'indexation des liens: ${error}`);
+        display(`Erreur lors de l'indexation des liens: ${error}`);
     }
 }
 
@@ -227,7 +263,7 @@ const urlgen=require("../perso/img-test/makeurl")
 
 
 async function indexPages(urls) {
-    console.log(urls)
+    display(urls)
     chrono.start();
     for (const url of urls) {
        // console.time(url)
@@ -238,12 +274,10 @@ async function indexPages(urls) {
         display(`page restante a indexer: ${(linksDB.count())-urls.indexOf(url)-1} temps de traitement : ${chrono.getTimeFormatted()}`);
     }
 }
-urlgen().then((data)=>{
-    indexPages(data.split("\n")).then(() => {
+
         // Indexation des liens après avoir indexé les pages initiales
         indexLinks();
-    });
-})
+    
 // Indexation des pages initiales
 
 
