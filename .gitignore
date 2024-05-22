@@ -1,3 +1,8 @@
 images.txt
 url.txt
-db/*
+db/** 
+db/indexedPages.json
+db/links.json
+pages/*
+ur*
+*.txt

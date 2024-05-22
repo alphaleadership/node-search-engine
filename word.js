@@ -21,7 +21,7 @@ const languageConfigDir = 'config';
 
 // Fonction pour lire le contenu d'un fichier
 function readFileContent(filePath) {
-    return fs.readFileSync(filePath, 'utf8');
+    return fs.readFileSync(filePath, ).toString();
 }
 
 // Fonction pour normaliser les mots (mettre en minuscule et retirer la ponctuation)
